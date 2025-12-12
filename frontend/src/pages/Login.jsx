@@ -1,34 +1,44 @@
 import useField from "../hooks/useField";
-import useLogin from "../hooks/useLogin";
+import useAuth from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 
 const Login = ({ setIsAuthenticated }) => {
   const navigate = useNavigate();
+
   const email = useField("email");
   const password = useField("password");
 
-  const { login, error } = useLogin("/api/users/login");
+  // ✅ unified auth hook for login
+  const { authenticate, error, isLoading } = useAuth("/api/users/login");
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    await login({ email: email.value, password: password.value });
-    if (!error) {
-      console.log("success");
+
+    const success = await authenticate({
+      email: email.value,
+      password: password.value,
+    });
+
+    if (success) {
       setIsAuthenticated(true);
       navigate("/");
     }
   };
 
-
   return (
     <div className="create">
       <h2>Login</h2>
+
       <form onSubmit={handleFormSubmit}>
-      <label>Email address:</label>
+        <label>Email address:</label>
         <input {...email} />
+
         <label>Password:</label>
         <input {...password} />
-        <button>Sign up</button>
+
+        <button disabled={isLoading}>Login</button>
+
+        {error && <div className="error">{error}</div>}
       </form>
     </div>
   );
