@@ -1,16 +1,19 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useField } from "../hooks/useField";
 
 const EditCarPage = () => {
-  const [car, setCar] = useState(null); // Initialize car state
-  const [loading, setLoading] = useState(true); // Loading state
-  const [error, setError] = useState(null); // Error state
-  const { id } = useParams();
-  // console.log(id);
-  
+  const [car, setCar] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Declare state variables for form fields
-  const [make, setMake] = useState("");
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  // ✅ useField hook used for ONE field (make)
+  const make = useField("text");
+
+  // Other fields remain unchanged
   const [model, setModel] = useState("");
   const [isAvailable, setIsAvailable] = useState(false);
   const [renter, setRenter] = useState("");
@@ -18,11 +21,8 @@ const EditCarPage = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   const token = user ? user.token : null;
 
-  const navigate = useNavigate();
-
   const updateCar = async (car) => {
     try {
-      console.log("Updating car:", car);
       const res = await fetch(`/api/cars/${car.id}`, {
         method: "PUT",
         headers: {
@@ -31,6 +31,7 @@ const EditCarPage = () => {
         },
         body: JSON.stringify(car),
       });
+
       if (!res.ok) throw new Error("Failed to update car");
       return res.ok;
     } catch (error) {
@@ -44,35 +45,33 @@ const EditCarPage = () => {
     const fetchCar = async () => {
       try {
         const res = await fetch(`/api/cars/${id}`);
-        if (!res.ok) {
-          throw new Error("Network response was not ok");
-        }
-        const data = await res.json();
-        setCar(data); // Set the car data
+        if (!res.ok) throw new Error("Network response was not ok");
 
-        // Initialize form fields with fetched car data
-        setMake(data.make);
+        const data = await res.json();
+        setCar(data);
+
+        // Initialize form fields
+        make.onChange({ target: { value: data.make } });
         setModel(data.model);
         setIsAvailable(data.availability.isAvailable);
-        setRenter(data.availability.renter);
+        setRenter(data.availability.renter || "");
       } catch (error) {
-        console.error("Failed to fetch car:", error);
         setError(error.message);
       } finally {
-        setLoading(false); // Stop loading after fetch
+        setLoading(false);
       }
     };
 
     fetchCar();
   }, [id]);
 
-  // Handle form submission
+  // Submit form
   const submitForm = async (e) => {
     e.preventDefault();
 
     const updatedCar = {
       id,
-      make,
+      make: make.value, // ✅ value from useField
       model,
       availability: {
         isAvailable,
@@ -82,10 +81,7 @@ const EditCarPage = () => {
 
     const success = await updateCar(updatedCar);
     if (success) {
-      console.log("Car Updated Successfully");
       navigate(`/cars/${id}`);
-    } else {
-      console.error("Failed to update the car");
     }
   };
 
@@ -96,6 +92,7 @@ const EditCarPage = () => {
   return (
     <div className="create">
       <h2>Update Car</h2>
+
       {loading ? (
         <p>Loading...</p>
       ) : error ? (
@@ -103,12 +100,8 @@ const EditCarPage = () => {
       ) : (
         <form onSubmit={submitForm}>
           <label>Car Make:</label>
-          <input
-            type="text"
-            required
-            value={make}
-            onChange={(e) => setMake(e.target.value)}
-          />
+          <input required {...make} />
+
           <label>Car Model:</label>
           <input
             type="text"
@@ -116,6 +109,7 @@ const EditCarPage = () => {
             value={model}
             onChange={(e) => setModel(e.target.value)}
           />
+
           <label>Availability:</label>
           <select
             value={isAvailable ? "Yes" : "No"}
@@ -124,12 +118,14 @@ const EditCarPage = () => {
             <option value="Yes">Yes</option>
             <option value="No">No</option>
           </select>
+
           <label>Renter:</label>
           <input
             type="text"
             value={renter}
             onChange={(e) => setRenter(e.target.value)}
           />
+
           <button>Update Car</button>
         </form>
       )}
