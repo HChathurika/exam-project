@@ -13,7 +13,7 @@ const getAllCars = async (req, res) => {
   }
 }
 
-// Add one Car
+// Add one Car only
 const createCar = async (req, res) => {
   try {
     const user_id = req.user._id;
@@ -25,7 +25,7 @@ const createCar = async (req, res) => {
     res.status(201).json(newCar);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Server Error' });
+    res.status(500).json({ error: 'Server my error ' });
   }
 }
 
